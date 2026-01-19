@@ -250,7 +250,6 @@ func (service *ApplicationService) createTopicForSoftLink(softlink *model.Softli
 			fmt.Println("Response:", string(body))
 		} else {
 			if !isValidJSON(sl.JsonParameters) {
-				// TODO: videti ovde za te povratne vrednosti sta zezaju ovi errori
 				fmt.Println("JSON is not valid!")
 				return
 			}
@@ -336,7 +335,7 @@ func (service *ApplicationService) MergeDataSpaces(app1 model.Application, app2 
 	if err != nil {
 		return err
 	}
-	//false root in order to avoid conflict names TODO: check / after root
+	//false root in order to avoid conflict names
 	falseRoot := model.DataSpaceItem{Name: "Root", Path: ds2.DataSpaceId + "/Root/" + ds1.DataSpaceId, SizeKB: 1, IsLeaf: true, State: model.Custom, HasSchema: false}
 	service.CreateDataSpaceItem(app2.ApplicationId, &falseRoot, "", true)
 	for _, dsiPath := range dsis1 {
@@ -350,7 +349,19 @@ func (service *ApplicationService) MergeDataSpaces(app1 model.Application, app2 
 		//dsi2id/root/dsi1id/root/....
 
 		if deleteLinks {
-			fmt.Println("brisanje")
+			sls, err := service.store.GetAllSoftLinksForDataSpaceItem(dsiPath)
+			if err != nil {
+				return err
+			}
+			for _, sl := range sls {
+				if sl.TriggerPath != "" && sl.EventTopic != "" {
+					err = RegisterEventForTrigger(sl.TriggerPath, sl.EventTopic, false)
+					if err != nil {
+						return err
+					}
+				}
+			}
+			fmt.Println("deleting links...")
 			service.store.DeleteAllSoftlinksForDataSpaceItem(dsiPath)
 			dsi.State = model.Closed
 		} else {
@@ -420,7 +431,6 @@ func (service *ApplicationService) DeleteAppWithMerge(app1Id, app2Id string, ns1
 		return err
 	}
 
-	//videti za koje resurse da se pita
 	resp, err := service.meridian.BorrowResources(context.Background(), &message.BorrowResourcesReq{App1Id: app1Id, App2Id: app2Id, Namespace1Id: ns1Id, Namespace2Id: ns2Id, DiskResources: float64(ds1.SizeKB)})
 	if err != nil {
 		return err

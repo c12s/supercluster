@@ -108,7 +108,7 @@ func main() {
 
 	//When we receive an interrupt or kill, if we don't have any current connections the code will terminate.
 	//But if we do the code will stop receiving any new connections and wait for maximum of 30 seconds to finish all current requests.
-	//After that the code will terminate.
+	//After that, the code will terminate.
 	_ = <-sigCh
 
 	timeoutContext, cancel1 := context.WithTimeout(context.Background(), 30*time.Second)

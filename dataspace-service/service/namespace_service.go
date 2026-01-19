@@ -48,8 +48,20 @@ func (service *NamespaceService) DeleteAppDefault(nsId, appId string) error {
 	}
 
 	// delete all softlinks, checking only open items since softlink cannot be binded to any other type
-	// TODO: fali odjava sa trigera?
+	// unregister from trigger first, then delete softlinks
 	for _, item := range ds.OpenItems {
+		sls, err := service.store.GetAllSoftLinksForDataSpaceItem(item)
+		if err != nil {
+			return err
+		}
+		for _, sl := range sls {
+			if sl.TriggerPath != "" && sl.EventTopic != "" {
+				err = RegisterEventForTrigger(sl.TriggerPath, sl.EventTopic, false)
+				if err != nil {
+					return err
+				}
+			}
+		}
 		err = service.store.DeleteAllSoftlinksForDataSpaceItem(item)
 		if err != nil {
 			return err

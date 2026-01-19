@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"projekat/handler"
@@ -18,7 +19,7 @@ import (
 
 func main() {
 
-	endpoints := []string{"localhost:2379"}
+	endpoints := []string{os.Getenv("SUPERCLUSTER_ETCD_ADDRESS")}
 	timeout := 5 * time.Second
 
 	conn := Conn()
@@ -30,7 +31,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	conn_grpc, err := grpc.Dial("localhost:8000", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn_grpc, err := grpc.Dial(os.Getenv("MERIDIAN_ADDRESS"), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -55,15 +56,21 @@ func main() {
 	r.HandleFunc("/putSchema", appHandler.PutSchema).Methods("PUT")
 	r.HandleFunc("/deleteAppMerge", appHandler.DeleteAppWithMerge).Methods("DELETE")
 
+	port := os.Getenv("SUPERCLUSTER_LISTEN_PORT")
+	if port == "" {
+		port = "8001"
+	}
+
 	srv := &http.Server{
 		Handler: r,
-		Addr:    ":8001",
+		Addr:    ":" + port,
 	}
+
 	log.Fatal(srv.ListenAndServe())
 }
 
 func Conn() *nats.Conn {
-	conn, err := nats.Connect("nats://localhost:4222")
+	conn, err := nats.Connect(os.Getenv("NATS_ADDRESS"))
 	if err != nil {
 		log.Fatal(err)
 	}
