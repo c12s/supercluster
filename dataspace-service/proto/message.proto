@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+option go_package = "proto/message";
+
+package proto;
+
+service Meridian {
+  rpc BorrowResources (BorrowResourcesReq) returns (BorrowResourcesResp) {}
+}
+
+message BorrowResourcesReq {
+    string app1Id = 1;
+    string app2Id = 2;
+    string namespace1Id = 3;
+    string namespace2Id = 4;
+    double diskResources = 5;
+}
+
+message BorrowResourcesResp {
+    string reply = 1;
+    bool done = 2;
+}
